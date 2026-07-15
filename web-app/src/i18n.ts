@@ -61,6 +61,11 @@ const resources = {
       'receipts.totalAmount': 'Total Amount',
       'receipts.view': 'View',
       'receipts.delete': 'Delete',
+      'receipts.confirmDelete': 'Are you sure you want to delete this receipt?',
+      'receipts.deleteFailed': 'Failed to delete receipt. Please try again.',
+      'receipts.clearAll': 'Clear All',
+      'receipts.confirmClearAll': 'Are you sure you want to delete ALL receipts? This cannot be undone.',
+      'receipts.clearAllFailed': 'Failed to clear receipts. Please try again.',
       'receipts.noReceipts': 'No receipts found. Upload some receipts to get started.',
 
       // Categories
@@ -138,6 +143,11 @@ const resources = {
       'receipts.totalAmount': '总金额',
       'receipts.view': '查看',
       'receipts.delete': '删除',
+      'receipts.confirmDelete': '确定要删除这条票据吗？',
+      'receipts.deleteFailed': '删除失败，请重试。',
+      'receipts.clearAll': '清空全部',
+      'receipts.confirmClearAll': '确定要删除所有票据吗？此操作不可撤销。',
+      'receipts.clearAllFailed': '清空失败，请重试。',
       'receipts.noReceipts': '暂无票据。上传票据后即可查看。',
 
       // Categories

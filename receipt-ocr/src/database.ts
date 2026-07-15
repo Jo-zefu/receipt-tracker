@@ -60,6 +60,20 @@ export async function getAllReceipts(): Promise<Receipt[]> {
 }
 
 /**
+ * Delete a single receipt by ID
+ */
+export async function deleteReceiptById(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('receipts')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`Failed to delete receipt: ${error.message}`);
+  }
+}
+
+/**
  * Delete all receipts
  */
 export async function deleteAllReceipts(): Promise<void> {

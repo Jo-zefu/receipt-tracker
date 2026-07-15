@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { getReceipts, getExportUrl, ParsedReceipt } from '../services/api'
+import { getReceipts, getExportUrl, deleteReceipt, deleteAllReceipts, ParsedReceipt } from '../services/api'
 import './AllReceipts.css'
 
 interface DisplayReceipt {
@@ -35,12 +35,12 @@ export default function AllReceipts() {
   const loadReceipts = async () => {
     try {
       const data = await getReceipts()
-      const mapped: DisplayReceipt[] = data.receipts.map((r: ParsedReceipt, idx: number) => {
+      const mapped: DisplayReceipt[] = data.receipts.map((r: ParsedReceipt) => {
         const amount = r.amount || 0
         const tax = isZh ? 0 : amount * 0.08 // Only calculate tax for English
         const total = isZh ? amount : amount + tax
         return {
-          id: String(idx + 1),
+          id: r.id || '',
           date: r.date || '-',
           merchant: r.vendor || r.filename,
           category: r.category,
@@ -77,8 +77,30 @@ export default function AllReceipts() {
   }
 
   const handleDelete = async (id: string) => {
-    // For now, remove from local state (backend only supports clear all)
-    setReceipts((prev) => prev.filter((r) => r.id !== id))
+    if (!confirm(t('receipts.confirmDelete'))) {
+      return
+    }
+    try {
+      await deleteReceipt(id)
+      // Reload receipts after successful deletion
+      await loadReceipts()
+    } catch (error) {
+      console.error('Failed to delete receipt:', error)
+      alert(t('receipts.deleteFailed'))
+    }
+  }
+
+  const handleClearAll = async () => {
+    if (!confirm(t('receipts.confirmClearAll'))) {
+      return
+    }
+    try {
+      await deleteAllReceipts()
+      await loadReceipts()
+    } catch (error) {
+      console.error('Failed to clear all receipts:', error)
+      alert(t('receipts.clearAllFailed'))
+    }
   }
 
   return (
@@ -179,6 +201,18 @@ export default function AllReceipts() {
           </svg>
           {t('receipts.exportExcel')}
         </button>
+
+        {receipts.length > 0 && (
+          <button className="btn-danger" onClick={handleClearAll}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            {t('receipts.clearAll')}
+          </button>
+        )}
       </div>
 
       <div className="table-container">

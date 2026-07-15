@@ -1,6 +1,7 @@
-const API_BASE = '/api'
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 export interface ParsedReceipt {
+  id?: string
   filename: string
   vendor: string | null
   category: string
@@ -53,6 +54,13 @@ export async function getReceipts(): Promise<ReceiptsResponse> {
     throw new Error('Failed to fetch receipts')
   }
   return res.json()
+}
+
+export async function deleteReceipt(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/receipts/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    throw new Error('Failed to delete receipt')
+  }
 }
 
 export async function deleteAllReceipts(): Promise<void> {

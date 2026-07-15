@@ -11,6 +11,7 @@ import {
   insertReceipt,
   getAllReceipts,
   deleteAllReceipts,
+  deleteReceiptById,
   getReceiptSummary,
   uploadImage,
   Receipt,
@@ -21,8 +22,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
+}));
 app.use(express.json());
+
+// Health check endpoint (before static files)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // 临时目录用于处理上传（识别后删除）
@@ -170,6 +179,7 @@ app.get('/api/receipts', async (req, res) => {
 
     // 转换数据库格式到 API 格式
     const mappedReceipts = receipts.map((r) => ({
+      id: r.id,
       filename: r.filename,
       vendor: r.vendor,
       category: r.category,
@@ -222,6 +232,21 @@ app.get('/api/export', async (req, res) => {
     res.send(buffer);
   } catch (error: any) {
     console.error('导出失败:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/receipts/:id
+ * 删除单个票据
+ */
+app.delete('/api/receipts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await deleteReceiptById(id);
+    res.json({ success: true, message: '已删除' });
+  } catch (error: any) {
+    console.error('删除失败:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
