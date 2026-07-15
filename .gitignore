@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.backup
+*.env.tmp
+
+# Build outputs
+web-app/dist/
+receipt-ocr/dist/
+
+# Uploads (temporary)
+receipt-ocr/uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Railway
+.railway/

@@ -1,0 +1,18 @@
+{
+  "name": "receipt-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix receipt-ocr",
+    "start": "npm run start --prefix receipt-ocr",
+    "build": "npm run build --prefix receipt-ocr",
+    "web": "npm run dev --prefix web-app",
+    "web:build": "npm run build --prefix web-app",
+    "mobile": "npm run start --prefix expo-native",
+    "mobile:ios": "npm run ios --prefix expo-native",
+    "mobile:android": "npm run android --prefix expo-native"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>票据识别 - 自动报销</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F7F5F1;
+      color: #1E2227;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #6B7077;
+      margin-bottom: 32px;
+      font-size: 16px;
+    }
+
+    /* 上传区域 */
+    .upload-zone {
+      background: #FFFFFF;
+      border: 2px dashed #E7E3DA;
+      border-radius: 16px;
+      padding: 48px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 24px;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: #3C5A78;
+      background: #F0F4F8;
+    }
+
+    .upload-zone .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .upload-zone p {
+      color: #6B7077;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .upload-zone .hint {
+      font-size: 13px;
+      color: #9CA3AF;
+    }
+
+    input[type="file"] { display: none; }
+
+    /* 按钮 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #3C5A78;
+      color: #FFF;
+    }
+
+    .btn-primary:hover { background: #2E4760; }
+    .btn-primary:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: #FFFFFF;
+      color: #3C5A78;
+      border: 1px solid #E7E3DA;
+    }
+
+    .btn-secondary:hover { background: #F7F5F1; }
+
+    .btn-danger {
+      background: #FFFFFF;
+      color: #DC2626;
+      border: 1px solid #E7E3DA;
+    }
+
+    .btn-danger:hover { background: #FEF2F2; }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    /* 预览区 */
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .preview-item {
+      position: relative;
+      aspect-ratio: 3/4;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #E7E3DA;
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .preview-item .remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      background: rgba(0,0,0,0.6);
+      color: #FFF;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 24px;
+      text-align: center;
+    }
+
+    /* 加载状态 */
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #E7E3DA;
+      border-top-color: #3C5A78;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 结果区 */
+    .results { margin-top: 32px; }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: #FFFFFF;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #E7E3DA;
+    }
+
+    .summary-card .label {
+      font-size: 13px;
+      color: #6B7077;
+      margin-bottom: 8px;
+    }
+
+    .summary-card .value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .summary-card .value.green { color: #2D7A4F; }
+
+    /* 票据表格 */
+    .receipt-table {
+      width: 100%;
+      background: #FFFFFF;
+      border-radius: 12px;
+      border: 1px solid #E7E3DA;
+      overflow: hidden;
+    }
+
+    .receipt-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .receipt-table th {
+      background: #F7F5F1;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      color: #6B7077;
+      border-bottom: 1px solid #E7E3DA;
+    }
+
+    .receipt-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid #F0EDE8;
+    }
+
+    .receipt-table tr:last-child td { border-bottom: none; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-green { background: #D1FAE5; color: #065F46; }
+    .badge-yellow { background: #FEF3C7; color: #92400E; }
+    .badge-red { background: #FEE2E2; color: #991B1B; }
+
+    .amount-cell {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 分类统计 */
+    .category-list {
+      background: #FFFFFF;
+      border-radius: 12px;
+      border: 1px solid #E7E3DA;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .category-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #F0EDE8;
+    }
+
+    .category-item:last-child { border-bottom: none; }
+
+    .category-name { font-size: 14px; font-weight: 500; }
+    .category-amount { font-size: 14px; font-weight: 600; }
+
+    .category-bar {
+      height: 6px;
+      background: #E7E3DA;
+      border-radius: 3px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .category-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #3C5A78;
+      transition: width 0.3s ease;
+    }
+
+    /* 移动端拍照按钮 */
+    .camera-btn {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 20px 16px; }
+      h1 { font-size: 24px; }
+      .upload-zone { padding: 32px 20px; }
+      .camera-btn { display: inline-flex; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧾 票据识别</h1>
+    <p class="subtitle">上传报销票据图片，自动识别金额、分类，一键导出 Excel</p>
+
+    <!-- 上传区域 -->
+    <div class="upload-zone" id="uploadZone">
+      <div class="icon">📸</div>
+      <p>点击或拖拽图片到此处</p>
+      <p class="hint">支持 JPG / PNG / BMP，最多同时上传 20 张</p>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment">
+
+    <!-- 图片预览 -->
+    <div class="preview-grid" id="previewGrid"></div>
+
+    <!-- 操作按钮 -->
+    <div class="actions" id="actions" style="display: none;">
+      <button class="btn btn-primary" id="submitBtn" onclick="submitReceipts()">
+        🔍 开始识别
+      </button>
+      <button class="btn btn-secondary camera-btn" onclick="document.getElementById('cameraInput').click()">
+        📷 拍照
+      </button>
+      <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+        ➕ 继续添加
+      </button>
+      <button class="btn btn-danger" onclick="clearAll()">
+        🗑️ 清空
+      </button>
+    </div>
+
+    <!-- 加载状态 -->
+    <div class="loading" id="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>正在识别票据，请稍候...</p>
+    </div>
+
+    <!-- 识别结果 -->
+    <div class="results" id="results" style="display: none;">
+      <h2 style="margin-bottom: 16px;">识别结果</h2>
+
+      <!-- 汇总卡片 -->
+      <div class="summary-cards" id="summaryCards"></div>
+
+      <!-- 分类统计 -->
+      <div class="category-list" id="categoryList"></div>
+
+      <!-- 操作按钮 -->
+      <div class="actions">
+        <button class="btn btn-primary" onclick="exportExcel()">
+          📥 导出 Excel
+        </button>
+        <button class="btn btn-secondary" onclick="clearResults()">
+          🔄 重新识别
+        </button>
+      </div>
+
+      <!-- 详细表格 -->
+      <div class="receipt-table" id="receiptTable"></div>
+    </div>
+  </div>
+
+  <script>
+    let selectedFiles = [];
+
+    // 上传区域事件
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const cameraInput = document.getElementById('cameraInput');
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      addFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+    cameraInput.addEventListener('change', (e) => addFiles(e.target.files));
+
+    function addFiles(fileList) {
+      for (const file of fileList) {
+        if (file.type.startsWith('image/')) {
+          selectedFiles.push(file);
+        }
+      }
+      renderPreviews();
+    }
+
+    function renderPreviews() {
+      const grid = document.getElementById('previewGrid');
+      const actions = document.getElementById('actions');
+      grid.innerHTML = '';
+
+      if (selectedFiles.length === 0) {
+        actions.style.display = 'none';
+        return;
+      }
+
+      actions.style.display = 'flex';
+
+      selectedFiles.forEach((file, index) => {
+        const div = document.createElement('div');
+        div.className = 'preview-item';
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove';
+        removeBtn.textContent = '×';
+        removeBtn.onclick = () => {
+          selectedFiles.splice(index, 1);
+          renderPreviews();
+        };
+
+        div.appendChild(img);
+        div.appendChild(removeBtn);
+        grid.appendChild(div);
+      });
+    }
+
+    function clearAll() {
+      selectedFiles = [];
+      renderPreviews();
+      fileInput.value = '';
+    }
+
+    async function submitReceipts() {
+      if (selectedFiles.length === 0) return;
+
+      const loading = document.getElementById('loading');
+      const actions = document.getElementById('actions');
+      const submitBtn = document.getElementById('submitBtn');
+
+      submitBtn.disabled = true;
+      loading.style.display = 'block';
+
+      const formData = new FormData();
+      selectedFiles.forEach((file) => {
+        formData.append('receipts', file);
+      });
+
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          renderResults(data);
+        } else {
+          alert('识别失败: ' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        alert('请求失败: ' + error.message);
+      } finally {
+        loading.style.display = 'none';
+        submitBtn.disabled = false;
+      }
+    }
+
+    function renderResults(data) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+
+      // 汇总卡片
+      const summaryCards = document.getElementById('summaryCards');
+      summaryCards.innerHTML = `
+        <div class="summary-card">
+          <div class="label">票据数量</div>
+          <div class="value">${data.summary.count} 张</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">总金额</div>
+          <div class="value green">¥${data.summary.total.toFixed(2)}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">分类数</div>
+          <div class="value">${Object.keys(data.summary.byCategory).length} 类</div>
+        </div>
+      `;
+
+      // 分类统计
+      const categoryList = document.getElementById('categoryList');
+      const categories = Object.entries(data.summary.byCategory)
+        .sort((a, b) => b[1] - a[1]);
+      const maxAmount = categories.length > 0 ? categories[0][1] : 1;
+
+      categoryList.innerHTML = '<h3 style="margin-bottom: 12px; font-size: 16px;">分类统计</h3>' +
+        categories.map(([cat, amount]) => `
+          <div class="category-item">
+            <span class="category-name">${cat}</span>
+            <span class="category-amount">¥${amount.toFixed(2)}</span>
+          </div>
+          <div class="category-bar">
+            <div class="category-bar-fill" style="width: ${(amount / maxAmount * 100)}%"></div>
+          </div>
+        `).join('');
+
+      // 详细表格
+      const table = document.getElementById('receiptTable');
+      table.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>商户</th>
+              <th>分类</th>
+              <th>日期</th>
+              <th>金额</th>
+              <th>置信度</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.receipts.map((r, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${r.vendor || '未识别'}</td>
+                <td>${r.category}</td>
+                <td>${r.date || '未识别'}</td>
+                <td class="amount-cell">${r.amount !== null ? '¥' + r.amount.toFixed(2) : '待确认'}</td>
+                <td>
+                  <span class="badge ${r.confidence === 'high' ? 'badge-green' : 'badge-yellow'}">
+                    ${r.confidence === 'high' ? '✓ 高' : '⚠ 低'}
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // 滚动到结果区
+      resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function exportExcel() {
+      window.location.href = '/api/export';
+    }
+
+    function clearResults() {
+      fetch('/api/receipts', { method: 'DELETE' });
+      document.getElementById('results').style.display = 'none';
+      selectedFiles = [];
+      renderPreviews();
+    }
+  </script>
+</body>
+</html>
